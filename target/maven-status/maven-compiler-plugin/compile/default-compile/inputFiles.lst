@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 C:\Users\Samantha\Documents\UNIMET\Sistemas Operativos\ProyectoSO2\src\main\java\edd\Block.java
 C:\Users\Samantha\Documents\UNIMET\Sistemas Operativos\ProyectoSO2\src\main\java\edd\Buffer.java
 C:\Users\Samantha\Documents\UNIMET\Sistemas Operativos\ProyectoSO2\src\main\java\edd\Cola.java
@@ -15,3 +16,20 @@ C:\Users\Samantha\Documents\UNIMET\Sistemas Operativos\ProyectoSO2\src\main\java
 C:\Users\Samantha\Documents\UNIMET\Sistemas Operativos\ProyectoSO2\src\main\java\model\ProyectoSO2.java
 C:\Users\Samantha\Documents\UNIMET\Sistemas Operativos\ProyectoSO2\src\main\java\model\SistemaArchivos.java
 C:\Users\Samantha\Documents\UNIMET\Sistemas Operativos\ProyectoSO2\src\main\java\model\User.java
+=======
+C:\Users\sarazo\Documents\UNIMET\ProyectoSO2\src\main\java\edd\Block.java
+C:\Users\sarazo\Documents\UNIMET\ProyectoSO2\src\main\java\edd\Buffer.java
+C:\Users\sarazo\Documents\UNIMET\ProyectoSO2\src\main\java\edd\Cola.java
+C:\Users\sarazo\Documents\UNIMET\ProyectoSO2\src\main\java\edd\ListaEnlazada.java
+C:\Users\sarazo\Documents\UNIMET\ProyectoSO2\src\main\java\edd\Pila.java
+C:\Users\sarazo\Documents\UNIMET\ProyectoSO2\src\main\java\model\Archivo.java
+C:\Users\sarazo\Documents\UNIMET\ProyectoSO2\src\main\java\model\Directorio.java
+C:\Users\sarazo\Documents\UNIMET\ProyectoSO2\src\main\java\model\Disco.java
+C:\Users\sarazo\Documents\UNIMET\ProyectoSO2\src\main\java\model\FileSystemElement.java
+C:\Users\sarazo\Documents\UNIMET\ProyectoSO2\src\main\java\model\PersistenciaManager.java
+C:\Users\sarazo\Documents\UNIMET\ProyectoSO2\src\main\java\model\PlanificadorDisco.java
+C:\Users\sarazo\Documents\UNIMET\ProyectoSO2\src\main\java\model\Proceso.java
+C:\Users\sarazo\Documents\UNIMET\ProyectoSO2\src\main\java\model\ProyectoSO2.java
+C:\Users\sarazo\Documents\UNIMET\ProyectoSO2\src\main\java\model\SistemaArchivos.java
+C:\Users\sarazo\Documents\UNIMET\ProyectoSO2\src\main\java\model\User.java
+>>>>>>> fccfcf2b2427f1a121593b3b35a878835a955b44

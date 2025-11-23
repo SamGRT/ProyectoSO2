@@ -7,6 +7,11 @@ gui\MainWindow$3.class
 edd\BufferEntry.class
 gui\MainWindow$5.class
 model\Proceso.class
+<<<<<<< HEAD
+=======
+model\Archivo.class
+model\PersistenciaManager.class
+>>>>>>> fccfcf2b2427f1a121593b3b35a878835a955b44
 edd\Buffer.class
 gui\CustomTreeRendered.class
 model\Directorio.class

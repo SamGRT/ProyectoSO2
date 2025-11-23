@@ -55,25 +55,34 @@ public class PlanificadorDisco {
         for (int i = 0; i < solicitudes.size(); i++) {
             Proceso p= solicitudes.get(i);
             int bloqueObjetivo = obtenerPrimerBloque(disco, p.getArchivoObjetivo());
-            int distancia = Math.abs(bloqueObjetivo - posicionActual);
-            
-            if (distancia < distanciaMin) {
-                distanciaMin = distancia;
-                seleccionado = p;
+            if (bloqueObjetivo != -1) {
+                int distancia = Math.abs(bloqueObjetivo - posicionActual);
+
+                if (distancia < distanciaMin) {
+                    distanciaMin = distancia;
+                    seleccionado = p;
+                }
             }
         }
+        
+        if (seleccionado == null && !solicitudes.isEmpty()) {
+            seleccionado = solicitudes.get(0);
+            System.out.println("  [WARNING] Archivo no encontrado: " + seleccionado.getArchivoObjetivo() + ", eliminando de cola");
+        }
+        
         if (seleccionado != null) {
             solicitudes.remove(seleccionado);
             int nuevoBloque = obtenerPrimerBloque(disco, seleccionado.getArchivoObjetivo());
-            disco.setPosicionCabezal(nuevoBloque); 
-            
+            if (nuevoBloque != -1) {
+                disco.setPosicionCabezal(nuevoBloque); 
+            }
         }
         return seleccionado;
     }
    // Scan y si es true circular C-SCAN
      private Proceso atenderSCAN(Cola solicitudes, Disco disco,boolean circular) {
         int posicionActual = disco.getPosicionCabezal();
-        int totalBloques = disco.getTotalBloques();
+        //int totalBloques = disco.getTotalBloques(); NO SE ESTÁ USANDO??
         Proceso seleccionado = null;
         int menorDiferencia = Integer.MAX_VALUE;
 
@@ -81,6 +90,8 @@ public class PlanificadorDisco {
         for (int i = 0; i < solicitudes.size(); i++) {
             Proceso p = solicitudes.get(i);
             int bloqueObjetivo = obtenerPrimerBloque(disco, p.getArchivoObjetivo());
+            if (bloqueObjetivo == -1) continue;
+            
             if (bloqueObjetivo >= posicionActual) {
                 int diferencia = bloqueObjetivo - posicionActual;
                 if (diferencia < menorDiferencia) {
@@ -92,29 +103,30 @@ public class PlanificadorDisco {
 
         // Si no hay más hacia adelante
         if (seleccionado == null) {
-            if (circular) {
-                // C-SCAN: saltar al inicio
-                disco.setPosicionCabezal(0);
-                return atenderSCAN(solicitudes, disco, true);
-            } else {
-                // SCAN: moverse hacia atrás
-                for (int i = 0; i < solicitudes.size(); i++) {
-                    Proceso p = solicitudes.get(i);
-                    int bloqueObjetivo = obtenerPrimerBloque(disco, p.getArchivoObjetivo());
-                    if (bloqueObjetivo <= posicionActual) {
-                        int diferencia = posicionActual - bloqueObjetivo;
-                        if (diferencia < menorDiferencia) {
-                            menorDiferencia = diferencia;
-                            seleccionado = p;
-                        }
-                    }
+            for (int i = 0; i < solicitudes.size(); i++) {
+                Proceso p = solicitudes.get(i);
+                int bloqueObjetivo = obtenerPrimerBloque(disco, p.getArchivoObjetivo());
+                if (bloqueObjetivo == -1) continue;
+                
+                int diferencia = posicionActual - bloqueObjetivo;
+                if (diferencia < menorDiferencia) {
+                    menorDiferencia = diferencia;
+                    seleccionado = p;
                 }
             }
+        }
+        
+        if (seleccionado == null && !solicitudes.isEmpty()) {
+            seleccionado = solicitudes.get(0);
+            System.out.print("  [WARNING] Archivo no encontrado en SCAN: " + seleccionado.getArchivoObjetivo());
         }
 
         if (seleccionado != null) {
             solicitudes.remove(seleccionado);
-            disco.setPosicionCabezal(obtenerPrimerBloque(disco, seleccionado.getArchivoObjetivo()));
+            int nuevoBloque = obtenerPrimerBloque(disco, seleccionado.getArchivoObjetivo());
+            if (nuevoBloque != -1) {
+                disco.setPosicionCabezal(nuevoBloque);
+            }
         }
 
         return seleccionado;
@@ -130,7 +142,7 @@ private int obtenerPrimerBloque(Disco disco, String archivoNombre) {
                 return b.getBlockNumber();
             }
         }
-        return 0; // Si no lo encuentra, asumir bloque 0
+        return -1; // Si no lo encuentra, asumir bloque 0
     }
 
     public String getPolitica() {
