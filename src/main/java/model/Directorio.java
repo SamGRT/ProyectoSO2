@@ -1,6 +1,7 @@
 package model;
 
 import edd.ListaEnlazada;
+import javax.swing.tree.DefaultMutableTreeNode;
 
 /**
  *
@@ -62,5 +63,21 @@ public class Directorio extends FileSystemElement {
     
     public Directorio getDirectorioPadre() {
         return directorioPadre;
+    }
+    @Override
+    public String toString() {
+        return this.nombre; // o el campo donde guardas el nombre
+ }
+    public DefaultMutableTreeNode toTreeNode() {
+        DefaultMutableTreeNode node = new DefaultMutableTreeNode(this);
+        for (int i = 0; i < elementos.tamaño(); i++) {
+            FileSystemElement elemento = (FileSystemElement) elementos.obtener(i);
+            if (elemento.esDirectorio()) {
+                node.add(((Directorio) elemento).toTreeNode());
+            } else {
+                node.add(new DefaultMutableTreeNode(elemento));
+            }
+        }
+        return node;
     }
 }

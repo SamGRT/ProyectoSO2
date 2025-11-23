@@ -41,7 +41,7 @@ public class SistemaArchivos {
             return false; // No hay espacio
         }
         
-        Archivo nuevoArchivo = new Archivo(nombre, usuarioActual, tamañoBloques);
+        Archivo nuevoArchivo = new Archivo(nombre, usuarioActual, tamañoBloques,directorio);
         
         ListaEnlazada bloquesAsignados = disco.asignarBloquesEncadenados(tamañoBloques, nombre);
         

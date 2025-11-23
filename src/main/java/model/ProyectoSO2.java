@@ -4,6 +4,7 @@
 
 package model;
 import edd.ListaEnlazada;
+import gui.MainWindow;
 /**
  *
  * @author sarazo
@@ -30,9 +31,10 @@ System.out.println("=== PRUEBA COMPLETA DEL SISTEMA ===");
         sistema.crearArchivo("contrato.doc", 3, documentos);
         sistema.crearArchivo("foto.jpg", 8, imagenes);
         sistema.crearArchivo("logo.png", 2, imagenes);
-        
+        MainWindow ventana = new MainWindow();
+        ventana.setVisible(true);
         // Mostrar estructura
-        System.out.println("\n=== ESTRUCTURA DEL SISTEMA ===");
+        /*System.out.println("\n=== ESTRUCTURA DEL SISTEMA ===");
         mostrarEstructura(raiz, 0);
         
         // Mostrar estado del disco
@@ -138,6 +140,7 @@ System.out.println("=== PRUEBA COMPLETA DEL SISTEMA ===");
                     System.out.println();
                 }
             }
-        }
-}}
+        }*/
+}
+    }
 

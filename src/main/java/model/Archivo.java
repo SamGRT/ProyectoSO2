@@ -12,19 +12,29 @@ public class Archivo extends FileSystemElement {
     private ListaEnlazada bloquesAsignados;
     private String contenido;
     private String color;
+    private Directorio directorioPadre;
     
-    public Archivo(String nombre, String propietario, int tamañoBloques) {
+    public Archivo(String nombre, String propietario, int tamañoBloques,Directorio directorioPadre) {
         super(nombre, propietario);
         this.tamañoBloques = tamañoBloques;
         this.primerBloque = -1;
         this.bloquesAsignados = new ListaEnlazada();
         this.contenido = "";
         this.color = generarColor();
+        this.directorioPadre = directorioPadre; 
     }
     
     @Override
     public boolean esDirectorio() {
         return false;
+    }
+
+    public void setDirectorioPadre(Directorio directorioPadre) {
+        this.directorioPadre = directorioPadre;
+    }
+
+    public Directorio getDirectorioPadre() {
+        return directorioPadre;
     }
     
     @Override
@@ -36,7 +46,10 @@ public class Archivo extends FileSystemElement {
         String[] colores = {"#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA0DD", "#98D8C8", "#F7DC6F"};
         return colores[Math.abs(nombre.hashCode()) % colores.length];
     }
-    
+    @Override
+    public String toString() {
+        return this.nombre; 
+    }
     public int getTamañoBloques() {
         return tamañoBloques;
     }
