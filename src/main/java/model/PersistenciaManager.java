@@ -36,7 +36,7 @@ public class PersistenciaManager {
         }
     }
     
-    public static SistemaArchivos cargarEstado() {
+    public static SistemaArchivos cargarEstado(Directorio directorio) {
         File archivo = new File(ARCHIVO_ESTADO);
         if (!archivo.exists()) {
             System.out.println("ℹ️ No hay estado previo. Sistema nuevo.");
@@ -63,7 +63,7 @@ public class PersistenciaManager {
                 } else if ("DIRECTORIO".equals(tipo)) {
                     cargarDirectorio(partes, sistema);
                 } else if ("ARCHIVO".equals(tipo)) {
-                    cargarArchivo(partes, sistema);
+                    cargarArchivo(partes, sistema,directorio);
                 }
             }
             
@@ -147,7 +147,7 @@ public class PersistenciaManager {
         }
     }
     
-    private static void cargarArchivo(String[] partes, SistemaArchivos sistema) {
+    private static void cargarArchivo(String[] partes, SistemaArchivos sistema,Directorio directorio) {
         if (partes.length < 8) return;
         
         String ruta = partes[1];
@@ -156,7 +156,7 @@ public class PersistenciaManager {
         
         if (padre != null) {
             int tamañoBloques = Integer.parseInt(partes[3]);
-            Archivo archivo = new Archivo(nombre, partes[2], tamañoBloques);
+            Archivo archivo = new Archivo(nombre, partes[2], tamañoBloques,directorio);
             archivo.setPermisos(partes[4]);
             
             // Cargar bloques
