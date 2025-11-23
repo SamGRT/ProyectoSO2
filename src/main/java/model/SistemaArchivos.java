@@ -138,12 +138,6 @@ public class SistemaArchivos {
         Proceso proceso = planificador.atenderSolicitud(solicitudesES, disco);
         if (proceso != null) {
             proceso.setEstado("EJECUTANDO");
-            
-            // DEBUG: Mostrar información de la operación
-        System.out.println("  [DEBUG] Atendiendo: " + proceso.getName() + 
-                         " | Cabezal en: " + disco.getPosicionCabezal() +
-                         " | Política: " + planificador.getPolitica());
-        
             proceso.incrementarTiempo();
             proceso.setEstado("TERMINADO");
         }

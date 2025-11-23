@@ -78,6 +78,10 @@ System.out.println("=== PRUEBA COMPLETA DEL SISTEMA ===");
     
     // Procesar todas las solicitudes pendientes
     while (!sistema.getSolicitudesES().isEmpty()) {
+        int posicionAntes = sistema.getDisco().getPosicionCabezal(); // <- CAPTURAR ANTES
+        System.out.println("  [DEBUG] Atendiendo: " + sistema.getSolicitudesES().get(0).getName() + 
+                           " | Cabezal en: " + posicionAntes + 
+                           " | Política: " + politica);
         Proceso p = sistema.atenderSolicitudES();
         if (p != null) {
             System.out.println("Atendido: " + p.getName() +
