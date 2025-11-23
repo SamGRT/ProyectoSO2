@@ -12,28 +12,26 @@ public class ProyectoSO2 {
 
     public static void main(String[] args) {
         
-System.out.println("=== PRUEBA COMPLETA DEL SISTEMA ===");
+        System.out.println("=== SISTEMA DE ARCHIVOS CON PERSISTENCIA ===");
         
-        SistemaArchivos sistema = new SistemaArchivos();
+        // PRUEBA DE PERSISTENCIA
+        probarPersistencia();
         
-        // Crear estructura de directorios
-        Directorio raiz = sistema.getRaiz();
-        sistema.crearDirectorio("Documentos", raiz);
-        sistema.crearDirectorio("Imagenes", raiz);
-        sistema.crearDirectorio("Musica", raiz);
+        // Tu código original continúa aquí
+        System.out.println("\n\n=== PRUEBA COMPLETA DEL SISTEMA ===");
         
-        Directorio documentos = (Directorio) raiz.buscarElemento("Documentos");
-        Directorio imagenes = (Directorio) raiz.buscarElemento("Imagenes");
+        // Cargar sistema (si existe) o crear nuevo
+        SistemaArchivos sistema = PersistenciaManager.cargarEstado();
         
-        // Crear archivos en diferentes directorios
-        sistema.crearArchivo("tesis.pdf", 5, documentos);
-        sistema.crearArchivo("contrato.doc", 3, documentos);
-        sistema.crearArchivo("foto.jpg", 8, imagenes);
-        sistema.crearArchivo("logo.png", 2, imagenes);
+        // Si es un sistema nuevo, crear estructura básica
+        if (sistema.getRaiz().getElementos().tamaño() == 0) {
+            System.out.println("Inicializando sistema nuevo...");
+            inicializarSistema(sistema);
+        }
         
-        // Mostrar estructura
+        // Mostrar estructura cargada
         System.out.println("\n=== ESTRUCTURA DEL SISTEMA ===");
-        mostrarEstructura(raiz, 0);
+        mostrarEstructura(sistema.getRaiz(), 0);
         
         // Mostrar estado del disco
         System.out.println("\n=== ESTADO DEL DISCO ===");
@@ -44,61 +42,137 @@ System.out.println("=== PRUEBA COMPLETA DEL SISTEMA ===");
         
         // Mostrar archivos con sus bloques
         System.out.println("\n=== ARCHIVOS Y SUS BLOQUES ===");
-        mostrarArchivosConBloques(documentos);
-        mostrarArchivosConBloques(imagenes);
+        Directorio documentos = (Directorio) sistema.getRaiz().buscarElemento("Documentos");
+        Directorio imagenes = (Directorio) sistema.getRaiz().buscarElemento("Imagenes");
+        if (documentos != null) mostrarArchivosConBloques(documentos);
+        if (imagenes != null) mostrarArchivosConBloques(imagenes);
         
-        // Probar eliminación
-        System.out.println("\n=== PRUEBA DE ELIMINACIÓN ===");
-        boolean eliminado = sistema.eliminarArchivo("contrato.doc", documentos);
-        System.out.println("Archivo 'contrato.doc' eliminado: " + eliminado);
-        System.out.println("Bloques libres después de eliminar: " + disco.getBloquesLibres());
+        // Probar planificadores
+        System.out.println("\n=== PRUEBA DE PLANIFICADORES ===");
+        probarPlanificadores(sistema);
         
-        // Probar procesos y E/S
-        System.out.println("\n=== PROCESOS Y SOLICITUDES E/S ===");
-        System.out.println("Procesos en cola: " + sistema.getProcesos().size());
-        System.out.println("Solicitudes E/S: " + sistema.getSolicitudesES().size());
-        
-        String[] politicas = {"FIFO", "SSTF", "SCAN", "C-SCAN"};
-        for (String politica : politicas) {
-    System.out.println("\n===============================");
-    System.out.println("🔧 POLÍTICA DE PLANIFICACIÓN: " + politica);
-    System.out.println("===============================");
-
-    // Reiniciar planificador y establecer posición inicial del cabezal
-    sistema.setPlanificador(new PlanificadorDisco(politica));
-    sistema.getDisco().setPosicionCabezal(50); // Posición inicial diferente para ver movimiento
-
-    System.out.println("Posición inicial del cabezal: " + sistema.getDisco().getPosicionCabezal());
-
-    // Crear archivos en diferentes posiciones del disco
-    Directorio img = (Directorio) raiz.buscarElemento("Imagenes");
+        // GUARDAR ESTADO AL FINAL
+        System.out.println("\n=== GUARDANDO ESTADO ===");
+        PersistenciaManager.guardarEstado(sistema);
+        System.out.println("✅ Estado del sistema guardado para la próxima ejecución");
+    }
     
-    // Crear archivo específico
-    sistema.crearArchivo("temp_" + politica + ".txt", 4, img);
-    
-    // Procesar todas las solicitudes pendientes
-    while (!sistema.getSolicitudesES().isEmpty()) {
-        int posicionAntes = sistema.getDisco().getPosicionCabezal(); // <- CAPTURAR ANTES
-        System.out.println("  [DEBUG] Atendiendo: " + sistema.getSolicitudesES().get(0).getName() + 
-                           " | Cabezal en: " + posicionAntes + 
-                           " | Política: " + politica);
-        Proceso p = sistema.atenderSolicitudES();
-        if (p != null) {
-            System.out.println("Atendido: " + p.getName() +
-                             " | Archivo: " + p.getArchivoObjetivo() +
-                             " | Estado: " + p.getEstado() +
-                             " | Cabezal ahora en: " + sistema.getDisco().getPosicionCabezal());
+    private static void probarPersistencia() {
+        System.out.println("\n🔍 TEST DE PERSISTENCIA");
+        
+        // Crear sistema de prueba
+        SistemaArchivos sistemaTest = new SistemaArchivos();
+        sistemaTest.setUsuarioActual("usuario_test");
+        sistemaTest.setModoAdministrador(false);
+        sistemaTest.setPlanificador(new PlanificadorDisco("SSTF"));
+        sistemaTest.getDisco().setPosicionCabezal(25);
+        
+        // Crear estructura de prueba - CON VERIFICACIÓN
+        Directorio raiz = sistemaTest.getRaiz();
+        System.out.println("Creando directorio TestPersistencia...");
+        boolean dirCreado = sistemaTest.crearDirectorio("TestPersistencia", raiz);
+        System.out.println("Directorio creado: " + dirCreado);
+        
+        if (dirCreado) {
+            Directorio testDir = (Directorio) raiz.buscarElemento("TestPersistencia");
+            System.out.println("Directorio encontrado: " + (testDir != null));
+            
+            if (testDir != null) {
+                System.out.println("Creando archivos...");
+                boolean archivo1Creado = sistemaTest.crearArchivo("archivo1.txt", 2, testDir);
+                boolean archivo2Creado = sistemaTest.crearArchivo("archivo2.dat", 3, testDir);
+                System.out.println("Archivo1 creado: " + archivo1Creado);
+                System.out.println("Archivo2 creado: " + archivo2Creado);
+                
+                System.out.println("Sistema creado:");
+                mostrarEstructura(raiz, 0);
+                
+                // Guardar
+                System.out.println("\n💾 Guardando estado...");
+                PersistenciaManager.guardarEstado(sistemaTest);
+                
+                // Cargar en nuevo sistema
+                System.out.println("\n📂 Cargando estado...");
+                SistemaArchivos sistemaCargado = PersistenciaManager.cargarEstado();
+                
+                System.out.println("Sistema cargado:");
+                mostrarEstructura(sistemaCargado.getRaiz(), 0);
+                System.out.println("Usuario: " + sistemaCargado.getUsuarioActual());
+                System.out.println("Modo admin: " + sistemaCargado.isModoAdministrador());
+                System.out.println("Política: " + sistemaCargado.getPlanificador().getPolitica());
+                System.out.println("Cabezal: " + sistemaCargado.getDisco().getPosicionCabezal());
+                
+                System.out.println("✅ Test de persistencia completado exitosamente");
+            } else {
+                System.out.println("❌ Error: No se pudo encontrar el directorio recién creado");
+            }
+        } else {
+            System.out.println("❌ Error: No se pudo crear el directorio TestPersistencia");
         }
     }
-
-    // Limpiar el archivo temporal
-    sistema.eliminarArchivo("temp_" + politica + ".txt", img);
     
-    System.out.println("Cola de solicitudes vacía: " + sistema.getSolicitudesES().isEmpty());
-    System.out.println("Posición final del cabezal: " + sistema.getDisco().getPosicionCabezal());
-}
+    private static void inicializarSistema(SistemaArchivos sistema) {
+        Directorio raiz = sistema.getRaiz();
+        
+        // Crear estructura básica con verificación
+        System.out.println("Creando estructura básica...");
+        
+        boolean docCreado = sistema.crearDirectorio("Documentos", raiz);
+        boolean imgCreado = sistema.crearDirectorio("Imagenes", raiz);
+        boolean musCreado = sistema.crearDirectorio("Musica", raiz);
+        
+        System.out.println("Documentos creado: " + docCreado);
+        System.out.println("Imagenes creado: " + imgCreado);
+        System.out.println("Musica creado: " + musCreado);
+        
+        Directorio documentos = (Directorio) raiz.buscarElemento("Documentos");
+        Directorio imagenes = (Directorio) raiz.buscarElemento("Imagenes");
+        
+        if (documentos != null) {
+            // Crear algunos archivos
+            sistema.crearArchivo("tesis.pdf", 5, documentos);
+            sistema.crearArchivo("contrato.doc", 3, documentos);
         }
+        
+        if (imagenes != null) {
+            sistema.crearArchivo("foto.jpg", 8, imagenes);
+            sistema.crearArchivo("logo.png", 2, imagenes);
+        }
+    }
     
+    private static void probarPlanificadores(SistemaArchivos sistema) {
+        String[] politicas = {"FIFO", "SSTF", "SCAN", "C-SCAN"};
+        
+        for (String politica : politicas) {
+            System.out.println("\n--- Probando política: " + politica + " ---");
+            
+            sistema.setPlanificador(new PlanificadorDisco(politica));
+            sistema.getDisco().setPosicionCabezal(50);
+            
+            // Crear archivo de prueba
+            Directorio raiz = sistema.getRaiz();
+            boolean archivoCreado = sistema.crearArchivo("test_" + politica + ".tmp", 2, raiz);
+            
+            if (archivoCreado) {
+                System.out.println("Posición inicial cabezal: " + sistema.getDisco().getPosicionCabezal());
+                
+                // Procesar solicitudes
+                while (!sistema.getSolicitudesES().isEmpty()) {
+                    Proceso p = sistema.atenderSolicitudES();
+                    if (p != null) {
+                        System.out.println("  Procesado: " + p.getName() + 
+                                         " | Archivo: " + p.getArchivoObjetivo() +
+                                         " | Cabezal ahora: " + sistema.getDisco().getPosicionCabezal());
+                    }
+                }
+                
+                // Limpiar archivo temporal
+                sistema.eliminarArchivo("test_" + politica + ".tmp", raiz);
+            } else {
+                System.out.println("  No se pudo crear archivo de prueba");
+            }
+        }
+    }
     
     private static void mostrarEstructura(FileSystemElement elemento, int nivel) {
         String indent = "  ".repeat(nivel);
@@ -143,5 +217,5 @@ System.out.println("=== PRUEBA COMPLETA DEL SISTEMA ===");
                 }
             }
         }
-}}
-
+    }
+}

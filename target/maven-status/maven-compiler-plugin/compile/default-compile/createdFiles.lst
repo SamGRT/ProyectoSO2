@@ -11,6 +11,7 @@ model\PlanificadorDisco.class
 model\FileSystemElement.class
 model\Proceso.class
 model\Archivo.class
+model\PersistenciaManager.class
 edd\Buffer.class
 model\Directorio.class
 model\SistemaArchivos.class
