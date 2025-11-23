@@ -1,0 +1,17 @@
+model\Disco.class
+model\ProyectoSO2.class
+edd\ListaEnlazada.class
+edd\ListaEnlazada$Nodo.class
+edd\Pila.class
+edd\Cola.class
+edd\Block.class
+edd\Pila$Nodo.class
+edd\BufferEntry.class
+model\PlanificadorDisco.class
+model\FileSystemElement.class
+model\Proceso.class
+model\Archivo.class
+edd\Buffer.class
+model\Directorio.class
+model\SistemaArchivos.class
+model\User.class
