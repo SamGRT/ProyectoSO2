@@ -275,7 +275,9 @@ private void actualizarTablaArchivos() {
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 779, Short.MAX_VALUE)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 510, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 269, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -568,6 +570,7 @@ private void actualizarTablaArchivos() {
         }
         FileSystemElement elemento = (FileSystemElement) selectedNode.getUserObject();
         Directorio directorioPadre = elemento instanceof Archivo ? ((Archivo) elemento).getDirectorioPadre() : ((Directorio) elemento).getDirectorioPadre();
+        
         if (directorioPadre ==null) {
             JOptionPane.showMessageDialog(this, "No se puede renombrar el elemento raíz.", "Error de Edición", JOptionPane.ERROR_MESSAGE);
              return;
@@ -577,6 +580,7 @@ private void actualizarTablaArchivos() {
             selectedNode.setUserObject(elemento);
             treeModel.nodeChanged(selectedNode);
             FileDirName.setText("");
+            ;
             
         }
     }//GEN-LAST:event_editActionPerformed
