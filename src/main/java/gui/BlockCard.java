@@ -1,23 +1,74 @@
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
+ * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JPanel.java to edit this template
  */
 package gui;
-
+import javax.swing.*;
+import java.awt.*;
 /**
  *
  * @author Samantha
  */
-public class BlockCard extends javax.swing.JFrame {
-    
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(BlockCard.class.getName());
-
+    public class BlockCard extends javax.swing.JPanel {
+    private int blockNumber;
+    private boolean occupied;
+    private String fileName;
+    private Color blockColor;
     /**
      * Creates new form BlockCard
      */
-    public BlockCard() {
-        initComponents();
+    public BlockCard(int blockNumber) {
+        
+        this.blockNumber = blockNumber;
+        this.occupied = false;
+        this.fileName = "";
+        this.blockColor = Color.LIGHT_GRAY;
+        
+        setPreferredSize(new Dimension(40, 40));
+        setBackground(blockColor);
+        setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
+        setLayout(new BorderLayout());
+        
+        JLabel label = new JLabel(String.valueOf(blockNumber), SwingConstants.CENTER);
+        label.setFont(new Font("Arial", Font.PLAIN, 10));
+        add(label, BorderLayout.CENTER);
     }
+    
+    public void setOccupied(boolean occupied, String fileName, Color color) {
+        this.occupied = occupied;
+        this.fileName = fileName;
+        this.blockColor = color;
+        
+        
+        if (occupied) {
+            setBackground(color);
+            removeAll();
+            String labelText = "<html><center><b>" + fileName + "</b><br>" + blockNumber + "</center></html>";
+            JLabel label = new JLabel(labelText, SwingConstants.CENTER);
+            label.setFont(new Font("Arial", Font.PLAIN, 12));
+            add(label, BorderLayout.CENTER);
+            //setToolTipText("Bloque " + blockNumber + " - Archivo: " + fileName);
+        } else {
+            setBackground(Color.LIGHT_GRAY);
+            removeAll();
+            JLabel label = new JLabel(String.valueOf(blockNumber), SwingConstants.CENTER);
+        label.setFont(new Font("Arial", Font.PLAIN, 10));
+        label.setForeground(Color.BLACK);
+        add(label, BorderLayout.CENTER);
+            //setToolTipText("Bloque " + blockNumber + " - Libre");
+        }
+        repaint();
+    }
+    
+    public boolean isOccupied() {
+        return occupied;
+    }
+    
+    public int getBlockNumber() {
+        return blockNumber;
+    }
+
+    
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -28,10 +79,8 @@ public class BlockCard extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
+        this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGap(0, 400, Short.MAX_VALUE)
@@ -40,34 +89,8 @@ public class BlockCard extends javax.swing.JFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGap(0, 300, Short.MAX_VALUE)
         );
-
-        pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            logger.log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new BlockCard().setVisible(true));
-    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     // End of variables declaration//GEN-END:variables

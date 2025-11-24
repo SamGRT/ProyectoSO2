@@ -2,6 +2,7 @@ package model;
 
 import edd.*;
 import java.util.Random;
+import javax.swing.JOptionPane;
 
 /**
  *
@@ -93,6 +94,33 @@ public class SistemaArchivos {
         }
         return false;
     }
+        public boolean EditarElemento(FileSystemElement elemento,String nuevoNombre, Directorio directorioPadre){
+            if (elemento == null || nuevoNombre.trim().isEmpty() || directorioPadre ==null ) {
+                return false;
+            }
+            if (!modoAdministrador && !elemento.getPropietario().equals(usuarioActual)) {
+                return false;
+            }
+            ListaEnlazada elementos = directorioPadre.getElementos();
+    for (int i = 0; i < elementos.tamaño(); i++) {
+        FileSystemElement otroElemento = (FileSystemElement) elementos.obtener(i);
+        if (otroElemento != elemento && otroElemento.getNombre().equals(nuevoNombre)) {
+            return false; // Nombre duplicado
+        }
+        
+    }
+    //renombrar
+    String nombreAnterior = elemento.getNombre();
+    elemento.setNombre(nuevoNombre);
+    
+    Proceso proceso = new Proceso("Renombrar_" + nombreAnterior + "_a_" + nuevoNombre, "RENAME", nuevoNombre, usuarioActual);
+    procesos.encolar(proceso);
+    agregarSolicitudES(proceso);
+    
+    return true;
+    
+            
+        }
     
         public boolean eliminarDirectorio(String nombreDirectorio, Directorio directorioPadre) {
         FileSystemElement elemento = directorioPadre.buscarElemento(nombreDirectorio);
@@ -162,6 +190,23 @@ public class SistemaArchivos {
         FileSystemElement elemento = actual.buscarElemento(partes[partes.length - 1]);
         return (elemento != null && !elemento.esDirectorio()) ? (Archivo) elemento : null;
     }
+   public ListaEnlazada obtenerTodosLosArchivos() {
+    ListaEnlazada todosLosArchivos = new ListaEnlazada();
+    obtenerArchivosRecursivamente(raiz, todosLosArchivos);
+    return todosLosArchivos;
+}
+
+private void obtenerArchivosRecursivamente(Directorio directorio, ListaEnlazada archivos) {
+    ListaEnlazada elementos = directorio.getElementos();
+    for (int i = 0; i < elementos.tamaño(); i++) {
+        FileSystemElement elemento = (FileSystemElement) elementos.obtener(i);
+        if (elemento instanceof Archivo) {
+            archivos.agregar(elemento);
+        } else if (elemento instanceof Directorio) {
+            obtenerArchivosRecursivamente((Directorio) elemento, archivos);
+        }
+    }
+}
        
     // Getters y setters
     public Directorio getRaiz() {

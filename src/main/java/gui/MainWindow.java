@@ -4,8 +4,13 @@
  */
 package gui;
 
+import edd.ListaEnlazada;
+import java.awt.Color;
+import java.awt.Component;
 import javax.swing.JOptionPane;
+import javax.swing.JTable;
 import javax.swing.JTree;
+import javax.swing.table.DefaultTableModel;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
@@ -23,7 +28,12 @@ public class MainWindow extends javax.swing.JFrame {
     private DefaultTreeModel treeModel;
     private DefaultMutableTreeNode rootNode;
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(MainWindow.class.getName());
-
+    //Para el disco>
+    private javax.swing.JPanel diskPanel;
+    private edd.ListaEnlazada blocks;
+    private static final int TOTAL_BLOCKS = 100;
+    private static final int BLOCKS_PER_ROW = 10;
+    DefaultTableModel Tm=new DefaultTableModel();
     /**
      * Creates new form MainWindow
      */
@@ -31,6 +41,11 @@ public class MainWindow extends javax.swing.JFrame {
         initComponents();
         sistemaArchivos = new SistemaArchivos();
         InicializarArbol();
+        inicializarVistaDisco();
+       String titles[]= {"Nombre Archivo", "Bloques Asignados", "Dir Primer Bloque"};
+        Tm.setColumnIdentifiers(titles);
+        jTable1.setModel(Tm);
+        actualizarTablaArchivos();
     }
     
     private void InicializarArbol(){
@@ -60,6 +75,128 @@ private void agregarNodoAlArbol(DefaultMutableTreeNode parentTreeNode, Directori
     }
 }
 
+private void inicializarVistaDisco(){
+    jPanel6.setLayout(new java.awt.BorderLayout());
+    //titulo
+    javax.swing.JLabel titleLabel = new javax.swing.JLabel("DISCO - BLOQUES DE ALMACENAMIENTO", javax.swing.SwingConstants.CENTER);
+    titleLabel.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 14));
+    jPanel6.add(titleLabel, java.awt.BorderLayout.NORTH);
+    //panel de bloques
+    diskPanel = new javax.swing.JPanel();
+    diskPanel.setLayout(new java.awt.GridLayout(0, BLOCKS_PER_ROW, 2, 2));
+    diskPanel.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    diskPanel.setBackground(new java.awt.Color(255, 255, 255));
+    blocks = new edd.ListaEnlazada();
+    // Crear Bloques visuales
+    for (int i = 0; i < TOTAL_BLOCKS; i++) {
+        gui.BlockCard block = new gui.BlockCard(i);
+        blocks.agregar(block); // Usando tu método agregar
+        diskPanel.add(block);
+    }
+    javax.swing.JScrollPane scrollPane = new javax.swing.JScrollPane(diskPanel);
+    scrollPane.setPreferredSize(new java.awt.Dimension(600, 300));
+    jPanel6.add(scrollPane, java.awt.BorderLayout.CENTER);
+}
+private void actualizarVistaDisco(Archivo archivo) {
+    if (archivo == null) return;
+    
+    ListaEnlazada bloquesAsignados = archivo.getBloquesAsignados();
+    if (bloquesAsignados == null) return;
+    
+    // Obtener color del archivo
+    Color colorArchivo = Color.decode(archivo.getColor());
+    
+    // Actualizar cada bloque asignado
+    for (int i = 0; i < bloquesAsignados.tamaño(); i++) {
+        int numeroBloque = (int) bloquesAsignados.obtener(i);
+        if (numeroBloque >= 0 && numeroBloque < TOTAL_BLOCKS) {
+            BlockCard blockCard = (BlockCard) blocks.obtener(numeroBloque);
+            if (blockCard != null) {
+                blockCard.setOccupied(true, archivo.getNombre(), colorArchivo);
+            }
+        }
+    }
+    
+    // Refrescar la vista
+    diskPanel.revalidate();
+    diskPanel.repaint();
+}
+private void liberarBloquesEnDisco(Archivo archivo) {
+    if (archivo == null) return;
+    
+    ListaEnlazada bloquesAsignados = archivo.getBloquesAsignados();
+    if (bloquesAsignados == null) return;
+    
+    // Liberar cada bloque asignado
+    for (int i = 0; i < bloquesAsignados.tamaño(); i++) {
+        int numeroBloque = (int) bloquesAsignados.obtener(i);
+        if (numeroBloque >= 0 && numeroBloque < TOTAL_BLOCKS) {
+            BlockCard blockCard = (BlockCard) blocks.obtener(numeroBloque);
+            if (blockCard != null) {
+                blockCard.setOccupied(false, "", Color.LIGHT_GRAY);
+            }
+        }
+    }
+    
+    // Refrescar la vista
+    diskPanel.revalidate();
+    diskPanel.repaint();
+}
+
+private void actualizarTablaArchivos() {
+    // Limpiar la tabla
+    Tm.setRowCount(0);
+    
+    // Recorrer todos los archivos del sistema y agregarlos a la tabla
+    ListaEnlazada todosLosArchivos = sistemaArchivos.obtenerTodosLosArchivos();
+    for (int i = 0; i < todosLosArchivos.tamaño(); i++) {
+        Archivo archivo = (Archivo) todosLosArchivos.obtener(i);
+        
+        // Obtener información del archivo
+        String nombre = archivo.getNombre();
+        int bloquesAsignados = archivo.getBloquesAsignados() != null ? archivo.getBloquesAsignados().tamaño() : 0;
+        int primerBloque = archivo.getPrimerBloque(); // Necesitas implementar este método
+        
+        // Agregar fila a la tabla
+        Tm.addRow(new Object[]{nombre, bloquesAsignados, primerBloque});
+    }
+    //aplicar rendered con colores
+     jTable1.setDefaultRenderer(Object.class, new javax.swing.table.DefaultTableCellRenderer() {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, 
+                boolean isSelected, boolean hasFocus, int row, int column) {
+            
+            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            
+            // Solo aplicar color a la primera columna (nombre del archivo)
+            if (column == 0 && value != null) {
+                try {
+                    String nombreArchivo = value.toString();
+                    // Buscar el archivo en la lista para obtener su color
+                    ListaEnlazada archivos = sistemaArchivos.obtenerTodosLosArchivos();
+                    for (int i = 0; i < archivos.tamaño(); i++) {
+                        Archivo archivo = (Archivo) archivos.obtener(i);
+                        if (archivo.getNombre().equals(nombreArchivo)) {
+                            Color colorArchivo = Color.decode(archivo.getColor());
+                            c.setForeground(colorArchivo);
+                            break;
+                        }
+                    }
+                } catch (Exception e) {
+                    c.setForeground(Color.BLACK);
+                }
+            } else {
+                c.setForeground(Color.BLACK);
+            }
+            
+            return c;
+        }
+    });
+     
+    // Refrescar la tabla
+    jTable1.revalidate();
+    jTable1.repaint();
+}
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -69,20 +206,27 @@ private void agregarNodoAlArbol(DefaultMutableTreeNode parentTreeNode, Directori
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        botones = new javax.swing.ButtonGroup();
         jPanel1 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTree1 = new javax.swing.JTree();
         jPanel2 = new javax.swing.JPanel();
         jPanel3 = new javax.swing.JPanel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        jTable1 = new javax.swing.JTable();
         jPanel4 = new javax.swing.JPanel();
         jPanel5 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
-        isAdmin = new javax.swing.JRadioButton();
+        isUser = new javax.swing.JRadioButton();
         IsAdmin = new javax.swing.JRadioButton();
         CreateFile = new javax.swing.JButton();
         CreateDir = new javax.swing.JButton();
         FileDirName = new javax.swing.JTextField();
-        jSpinner1 = new javax.swing.JSpinner();
+        Tamano = new javax.swing.JSpinner();
+        edit = new javax.swing.JButton();
+        mode = new javax.swing.JButton();
+        delete = new javax.swing.JButton();
+        jPanel6 = new javax.swing.JPanel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -106,7 +250,7 @@ private void agregarNodoAlArbol(DefaultMutableTreeNode parentTreeNode, Directori
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 620, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 718, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -117,15 +261,25 @@ private void agregarNodoAlArbol(DefaultMutableTreeNode parentTreeNode, Directori
         jPanel3.setBackground(new java.awt.Color(204, 255, 255));
         jPanel3.setPreferredSize(new java.awt.Dimension(779, 260));
 
+        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+
+            },
+            new String [] {
+                "Title 1", "Title 2", "Title 3"
+            }
+        ));
+        jScrollPane2.setViewportView(jTable1);
+
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 779, Short.MAX_VALUE)
+            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 779, Short.MAX_VALUE)
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 260, Short.MAX_VALUE)
+            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 260, Short.MAX_VALUE)
         );
 
         jPanel2.add(jPanel3, java.awt.BorderLayout.PAGE_END);
@@ -139,11 +293,11 @@ private void agregarNodoAlArbol(DefaultMutableTreeNode parentTreeNode, Directori
         jLabel1.setForeground(new java.awt.Color(51, 51, 51));
         jLabel1.setText("CRUD");
 
-        isAdmin.setForeground(new java.awt.Color(51, 51, 51));
-        isAdmin.setText("User");
-        isAdmin.addActionListener(new java.awt.event.ActionListener() {
+        isUser.setForeground(new java.awt.Color(51, 51, 51));
+        isUser.setText("User");
+        isUser.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                isAdminActionPerformed(evt);
+                isUserActionPerformed(evt);
             }
         });
 
@@ -175,57 +329,111 @@ private void agregarNodoAlArbol(DefaultMutableTreeNode parentTreeNode, Directori
             }
         });
 
-        jSpinner1.setModel(new javax.swing.SpinnerNumberModel(1, 1, 100, 1));
+        Tamano.setModel(new javax.swing.SpinnerNumberModel(1, 1, 100, 1));
+
+        edit.setText("Editar");
+        edit.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                editActionPerformed(evt);
+            }
+        });
+
+        mode.setText("Confirmar Modo");
+        mode.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                modeActionPerformed(evt);
+            }
+        });
+
+        delete.setText("Eliminar");
+        delete.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                deleteActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
         jPanel5.setLayout(jPanel5Layout);
         jPanel5Layout.setHorizontalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 79, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(86, 86, 86))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
-                .addGap(18, 18, 18)
-                .addComponent(CreateDir)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 8, Short.MAX_VALUE)
-                .addComponent(CreateFile)
-                .addGap(20, 20, 20))
             .addGroup(jPanel5Layout.createSequentialGroup()
                 .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel5Layout.createSequentialGroup()
-                        .addGap(43, 43, 43)
-                        .addComponent(isAdmin, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(IsAdmin, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel5Layout.createSequentialGroup()
-                        .addGap(34, 34, 34)
+                        .addGap(33, 33, 33)
                         .addComponent(FileDirName, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(26, 26, 26)
-                        .addComponent(jSpinner1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addComponent(Tamano, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel5Layout.createSequentialGroup()
+                        .addGap(55, 55, 55)
+                        .addComponent(isUser, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(IsAdmin, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(9, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
+                        .addComponent(mode)
+                        .addGap(71, 71, 71))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
+                        .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(CreateDir)
+                            .addGroup(jPanel5Layout.createSequentialGroup()
+                                .addGap(6, 6, 6)
+                                .addComponent(CreateFile)))
+                        .addGap(73, 73, 73))))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
+                .addGap(0, 0, Short.MAX_VALUE)
+                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
+                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 79, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(85, 85, 85))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
+                        .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(delete)
+                            .addComponent(edit))
+                        .addGap(96, 96, 96))))
         );
         jPanel5Layout.setVerticalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel5Layout.createSequentialGroup()
                 .addGap(21, 21, 21)
                 .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(isAdmin)
+                    .addComponent(isUser)
                     .addComponent(IsAdmin))
-                .addGap(33, 33, 33)
-                .addComponent(jLabel1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jSpinner1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(FileDirName, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(mode, javax.swing.GroupLayout.PREFERRED_SIZE, 27, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(CreateFile)
-                    .addComponent(CreateDir))
-                .addContainerGap(201, Short.MAX_VALUE))
+                    .addComponent(FileDirName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(Tamano, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(11, 11, 11)
+                .addComponent(CreateDir)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(CreateFile)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(edit)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(delete)
+                .addContainerGap(189, Short.MAX_VALUE))
         );
 
         jPanel4.add(jPanel5, java.awt.BorderLayout.LINE_END);
+
+        javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
+        jPanel6.setLayout(jPanel6Layout);
+        jPanel6Layout.setHorizontalGroup(
+            jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 509, Short.MAX_VALUE)
+        );
+        jPanel6Layout.setVerticalGroup(
+            jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 470, Short.MAX_VALUE)
+        );
+
+        jPanel4.add(jPanel6, java.awt.BorderLayout.CENTER);
 
         jPanel2.add(jPanel4, java.awt.BorderLayout.CENTER);
 
@@ -234,9 +442,9 @@ private void agregarNodoAlArbol(DefaultMutableTreeNode parentTreeNode, Directori
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void isAdminActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_isAdminActionPerformed
+    private void isUserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_isUserActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_isAdminActionPerformed
+    }//GEN-LAST:event_isUserActionPerformed
 
     private void IsAdminActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_IsAdminActionPerformed
         // TODO add your handling code here:
@@ -244,6 +452,47 @@ private void agregarNodoAlArbol(DefaultMutableTreeNode parentTreeNode, Directori
 
     private void CreateFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CreateFileActionPerformed
         // TODO add your handling code here:
+        String nombre = FileDirName.getText().trim();
+        int sizeArchivo=(int )Tamano.getValue();
+        if (nombre.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Ingrese un nombre para el directorio");
+            return;
+        }
+        DefaultMutableTreeNode selectedNode = getSelectedNode();
+        Directorio directorioPadre;
+        
+        if (selectedNode ==null){
+            directorioPadre = sistemaArchivos.getRaiz();
+            selectedNode = rootNode;
+        }else{
+        Object userObject = selectedNode.getUserObject();
+            if (userObject instanceof Directorio) {
+                directorioPadre = (Directorio) userObject;
+            }else{
+                Archivo archivo = (Archivo) userObject;
+                directorioPadre = archivo.getDirectorioPadre();
+                selectedNode= (DefaultMutableTreeNode) selectedNode.getParent();
+                
+            }
+        }
+        //Crear en el sistema
+        if (sistemaArchivos.crearArchivo(nombre, sizeArchivo, directorioPadre)){
+            FileSystemElement nuevoElemento = directorioPadre.buscarElemento(nombre);
+            DefaultMutableTreeNode nuevoNodo = new DefaultMutableTreeNode(nuevoElemento);
+            treeModel.insertNodeInto(nuevoNodo, selectedNode, selectedNode.getChildCount());
+            jTree1.expandPath(new TreePath(selectedNode.getPath()));
+            jTree1.scrollPathToVisible(new TreePath(nuevoNodo.getPath()));
+            FileDirName.setText("");
+            //mesaje error maybe
+            
+            //actualizar vista en el disco
+            actualizarVistaDisco((Archivo) nuevoElemento);
+            //Actualizar Tabla
+            actualizarTablaArchivos();
+        JOptionPane.showMessageDialog(this, "Archivo creado exitosamente");
+        }
+        
+        
     }//GEN-LAST:event_CreateFileActionPerformed
 
     private void CreateDirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CreateDirActionPerformed
@@ -298,6 +547,112 @@ private void agregarNodoAlArbol(DefaultMutableTreeNode parentTreeNode, Directori
         // TODO add your handling code here:
     }//GEN-LAST:event_FileDirNameActionPerformed
 
+    private void editActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editActionPerformed
+        // TODO add your handling code here:
+        if (sistemaArchivos.getUsuarioActual()=="User") {
+            JOptionPane.showMessageDialog(this, "No puede Editar en modo Usuario");
+            return;
+        }
+        
+        DefaultMutableTreeNode selectedNode = getSelectedNode();
+        String nuevoNombre = FileDirName.getText().trim();
+        if (selectedNode ==null || selectedNode.getUserObject().equals(sistemaArchivos.getRaiz())) {
+            JOptionPane.showMessageDialog(this, "Seleccione un archivo o directorio (que no sea la raíz) para editar.", "Error de Edición", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        
+        if (nuevoNombre.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Ingrese el nuevo nombre");
+            return;
+        }
+        FileSystemElement elemento = (FileSystemElement) selectedNode.getUserObject();
+        Directorio directorioPadre = elemento instanceof Archivo ? ((Archivo) elemento).getDirectorioPadre() : ((Directorio) elemento).getDirectorioPadre();
+        if (directorioPadre ==null) {
+            JOptionPane.showMessageDialog(this, "No se puede renombrar el elemento raíz.", "Error de Edición", JOptionPane.ERROR_MESSAGE);
+             return;
+        }
+        //renombrar en el sistema
+        if (sistemaArchivos.EditarElemento(elemento,nuevoNombre,directorioPadre)) {
+            selectedNode.setUserObject(elemento);
+            treeModel.nodeChanged(selectedNode);
+            FileDirName.setText("");
+            
+        }
+    }//GEN-LAST:event_editActionPerformed
+
+    private void modeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_modeActionPerformed
+        // TODO add your handling code here:
+        botones.add(isUser);
+        botones.add(IsAdmin);
+        if (isUser.isSelected()) {
+            sistemaArchivos.setModoAdministrador(false);
+            sistemaArchivos.setUsuarioActual("User");
+            JOptionPane.showMessageDialog(this, "Actualmente esta en modo Usuario, solo lectura");
+        }else if (IsAdmin.isSelected()) {
+             sistemaArchivos.setModoAdministrador(true);
+            sistemaArchivos.setUsuarioActual("Admin");
+            JOptionPane.showMessageDialog(this, "Actualmente esta en modo Administrador");
+        }else{
+        JOptionPane.showMessageDialog(this, "no se selecciono ninguna opcion");
+        }
+        
+    }//GEN-LAST:event_modeActionPerformed
+
+    private void deleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteActionPerformed
+        // TODO add your handling code here:
+        if (sistemaArchivos.getUsuarioActual().equals("User")) {
+            JOptionPane.showMessageDialog(this, "En modo Usuario no puede eliminar Archivos o Directorios");
+            return;
+        }
+        
+         DefaultMutableTreeNode selectedNode = getSelectedNode();
+         if (selectedNode == null || selectedNode.getUserObject().equals(sistemaArchivos.getRaiz())) {
+             JOptionPane.showMessageDialog(this, "Seleccione un Archivo que no sea la Raiz");
+             return;
+         }
+         FileSystemElement elemento = (FileSystemElement) selectedNode.getUserObject();
+         //confirmar eliminacion'
+         int confirmacion= JOptionPane.showConfirmDialog(this, "Esta seguro de que desea eliminar" + " "+ elemento.getNombre() + "?","Confirmar Eliminacion", JOptionPane.YES_NO_OPTION);
+         
+         if (confirmacion != JOptionPane.YES_OPTION) {
+             return;
+        }
+        //
+        Directorio directorioPadre;
+        if (elemento instanceof Archivo) {
+            
+            directorioPadre=  ((Archivo) elemento).getDirectorioPadre();
+        }else{
+            directorioPadre = ((Directorio) elemento).getDirectorioPadre();
+        }
+        //verificar que el dir padre no sea nulo
+        if (directorioPadre == null) {
+        JOptionPane.showMessageDialog(this, 
+            "No se puede eliminar el elemento raíz.", 
+            "Error de Eliminación", 
+            JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+        //remover en el sistema
+        boolean eliminado = false;
+        if (elemento instanceof Archivo) {
+        liberarBloquesEnDisco((Archivo) elemento);
+        eliminado = sistemaArchivos.eliminarArchivo(elemento.getNombre(), directorioPadre);
+    } else if (elemento instanceof Directorio) {
+        eliminado = sistemaArchivos.eliminarDirectorio(elemento.getNombre(), directorioPadre);
+    }
+        //remover visualmente
+        if (eliminado) {
+            treeModel.removeNodeFromParent(selectedNode);
+            actualizarTablaArchivos();
+            JOptionPane.showMessageDialog(this, "Eliminado exitosamente");
+        }else{
+            JOptionPane.showMessageDialog(this, "Error al eliminar elemento");
+        }
+        
+    }//GEN-LAST:event_deleteActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -328,15 +683,22 @@ private void agregarNodoAlArbol(DefaultMutableTreeNode parentTreeNode, Directori
     private javax.swing.JButton CreateFile;
     private javax.swing.JTextField FileDirName;
     private javax.swing.JRadioButton IsAdmin;
-    private javax.swing.JRadioButton isAdmin;
+    private javax.swing.JSpinner Tamano;
+    private javax.swing.ButtonGroup botones;
+    private javax.swing.JButton delete;
+    private javax.swing.JButton edit;
+    private javax.swing.JRadioButton isUser;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel5;
+    private javax.swing.JPanel jPanel6;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JSpinner jSpinner1;
+    private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JTable jTable1;
     private javax.swing.JTree jTree1;
+    private javax.swing.JButton mode;
     // End of variables declaration//GEN-END:variables
 }

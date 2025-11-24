@@ -5,13 +5,9 @@ edd\Block.class
 gui\BlockCard.class
 gui\MainWindow$3.class
 edd\BufferEntry.class
+gui\MainWindow$8.class
 gui\MainWindow$5.class
 model\Proceso.class
-<<<<<<< HEAD
-=======
-model\Archivo.class
-model\PersistenciaManager.class
->>>>>>> fccfcf2b2427f1a121593b3b35a878835a955b44
 edd\Buffer.class
 gui\CustomTreeRendered.class
 model\Directorio.class
@@ -20,6 +16,8 @@ gui\MainWindow.class
 model\User.class
 gui\MainWindow$2.class
 model\Disco.class
+gui\MainWindow$9.class
+gui\MainWindow$7.class
 edd\ListaEnlazada$Nodo.class
 edd\Cola.class
 gui\MainWindow$4.class
@@ -27,4 +25,6 @@ edd\Pila$Nodo.class
 model\PlanificadorDisco.class
 model\FileSystemElement.class
 model\Archivo.class
+model\PersistenciaManager.class
 gui\MainWindow$1.class
+gui\MainWindow$6.class
