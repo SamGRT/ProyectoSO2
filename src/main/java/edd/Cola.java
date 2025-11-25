@@ -82,7 +82,7 @@ public class Cola {
     public void remove(Proceso proceso){
         for (int i = 0; i < size; i++) {
             if (procesos[i] != null && procesos[i].equals(proceso)) {
-                for (int j = i; j < size; j++) {
+                for (int j = i; j < size - 1 ; j++) {
                     procesos[j]=procesos[j+1];
                 }
                 procesos[--size ] =null;

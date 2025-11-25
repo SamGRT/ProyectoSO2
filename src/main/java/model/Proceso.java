@@ -25,6 +25,27 @@ public class Proceso {
         this.tiempoEjecucion = 0;
     }
     
+    public String getBloqueActual() {
+        // Para simular, puedes retornar un valor o implementar lógica real
+        switch(operacion) {
+            case "CREAR": return "Asignando";
+            case "ELIMINAR": return "Liberando";
+            case "RENAME": return "N/A";
+            default: return "Procesando";
+        }
+    }
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Proceso proceso = (Proceso) obj;
+        return name.equals(proceso.name);
+    }
+    
+    @Override
+    public int hashCode() {
+        return name.hashCode();
+    }
     public String getName() {
         return name;
     }

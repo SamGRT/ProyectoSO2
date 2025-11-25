@@ -17,6 +17,7 @@ import javax.swing.tree.TreePath;
 import model.Archivo;
 import model.Directorio;
 import model.FileSystemElement;
+import model.Proceso;
 import model.SistemaArchivos;
 
 /**
@@ -34,6 +35,9 @@ public class MainWindow extends javax.swing.JFrame {
     private static final int TOTAL_BLOCKS = 100;
     private static final int BLOCKS_PER_ROW = 10;
     DefaultTableModel Tm=new DefaultTableModel();
+    DefaultTableModel Tcola= new DefaultTableModel();
+    private javax.swing.Timer processTimer;
+
     /**
      * Creates new form MainWindow
      */
@@ -42,10 +46,39 @@ public class MainWindow extends javax.swing.JFrame {
         sistemaArchivos = new SistemaArchivos();
         InicializarArbol();
         inicializarVistaDisco();
+        
+
+// === TIMER para atender solicitudes de E/S progresivamente ===
+processTimer = new javax.swing.Timer(5000, e -> {
+    edd.Cola solicitudes = sistemaArchivos.getSolicitudesES();
+    
+    if (!solicitudes.isEmpty()) {
+        // Usar el planificador para obtener el proceso a atender según la política
+        Proceso procesoAtendido = sistemaArchivos.atenderSolicitudES();
+        
+        if (procesoAtendido != null) {
+            System.out.println("Proceso completado y removido: " + procesoAtendido.getName());
+        }
+        
+        // Refrescar vista
+        actualizarTablaCola();
+    }
+});
+processTimer.start();
+////////////////////////////////////////////
+
+
        String titles[]= {"Nombre Archivo", "Bloques Asignados", "Dir Primer Bloque"};
         Tm.setColumnIdentifiers(titles);
         jTable1.setModel(Tm);
+        
+        
+        String titlesCola[] = {"ID Proceso", "Archivo Solicitado", "Bloque Actual", "Estado"};
+        Tcola.setColumnIdentifiers(titlesCola);
+        jTable2.setModel(Tcola);
+        
         actualizarTablaArchivos();
+        actualizarTablaCola();
     }
     
     private void InicializarArbol(){
@@ -197,6 +230,50 @@ private void actualizarTablaArchivos() {
     jTable1.revalidate();
     jTable1.repaint();
 }
+
+private void actualizarTablaCola(){
+    Tcola.setRowCount(0);
+    edd.Cola solicitudes = sistemaArchivos.getSolicitudesES();
+    
+    System.out.println("Actualizando tabla cola - Total solicitudes: " + solicitudes.size());
+    for (int i = 0; i < solicitudes.size(); i++) {
+        // Castear el elemento obtenido a Proceso
+        Proceso proceso = (Proceso) solicitudes.get(i); 
+        
+        
+         String idProceso = proceso.getName(); 
+        String archivoSolicitado = proceso.getArchivoObjetivo();
+        String bloqueActual = proceso.getBloqueActual(); 
+        String estado = proceso.getEstado();
+        System.out.println("Proceso en cola: " + idProceso + " - Estado: " + estado);
+        Tcola.addRow(new Object[]{idProceso, archivoSolicitado, bloqueActual, estado});
+    }
+       jTable2.revalidate();
+        jTable2.repaint();}
+
+       private void liberarBloquesDeDirectorio(Directorio directorio) {
+    if (directorio == null) return;
+    
+    // Liberar bloques de todos los archivos en este directorio
+    ListaEnlazada elementos = directorio.getElementos();
+    for (int i = 0; i < elementos.tamaño(); i++) {
+        FileSystemElement elemento = (FileSystemElement) elementos.obtener(i);
+        
+        if (elemento instanceof Archivo) {
+            // Liberar bloques del archivo
+            liberarBloquesEnDisco((Archivo) elemento);
+        } else if (elemento instanceof Directorio) {
+            // Llamada recursiva para subdirectorios
+            liberarBloquesDeDirectorio((Directorio) elemento);
+        }
+    }
+    diskPanel.revalidate();
+    diskPanel.repaint();
+       }
+ 
+    
+    
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -207,6 +284,7 @@ private void actualizarTablaArchivos() {
     private void initComponents() {
 
         botones = new javax.swing.ButtonGroup();
+        buttonGroup1 = new javax.swing.ButtonGroup();
         jPanel1 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTree1 = new javax.swing.JTree();
@@ -214,6 +292,8 @@ private void actualizarTablaArchivos() {
         jPanel3 = new javax.swing.JPanel();
         jScrollPane2 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        jTable2 = new javax.swing.JTable();
         jPanel4 = new javax.swing.JPanel();
         jPanel5 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
@@ -226,6 +306,12 @@ private void actualizarTablaArchivos() {
         edit = new javax.swing.JButton();
         mode = new javax.swing.JButton();
         delete = new javax.swing.JButton();
+        jLabel2 = new javax.swing.JLabel();
+        isFIFO = new javax.swing.JRadioButton();
+        isSSTF = new javax.swing.JRadioButton();
+        isSCAN = new javax.swing.JRadioButton();
+        isC_SCAN = new javax.swing.JRadioButton();
+        ConfirmPolitics = new javax.swing.JButton();
         jPanel6 = new javax.swing.JPanel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -271,17 +357,32 @@ private void actualizarTablaArchivos() {
         ));
         jScrollPane2.setViewportView(jTable1);
 
+        jTable2.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Title 1", "Title 2", "Title 3", "Title 4"
+            }
+        ));
+        jScrollPane3.setViewportView(jTable2);
+
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 510, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 269, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 263, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 260, Short.MAX_VALUE)
+            .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
         );
 
         jPanel2.add(jPanel3, java.awt.BorderLayout.PAGE_END);
@@ -354,6 +455,29 @@ private void actualizarTablaArchivos() {
             }
         });
 
+        jLabel2.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        jLabel2.setForeground(new java.awt.Color(51, 51, 51));
+        jLabel2.setText("Politica");
+
+        isFIFO.setForeground(new java.awt.Color(0, 0, 0));
+        isFIFO.setText("FIFO");
+
+        isSSTF.setForeground(new java.awt.Color(0, 0, 0));
+        isSSTF.setText("SSTF");
+
+        isSCAN.setForeground(new java.awt.Color(0, 0, 0));
+        isSCAN.setText("SCAN");
+
+        isC_SCAN.setForeground(new java.awt.Color(0, 0, 0));
+        isC_SCAN.setText("C-SCAN");
+
+        ConfirmPolitics.setText("Confirmar");
+        ConfirmPolitics.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ConfirmPoliticsActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
         jPanel5.setLayout(jPanel5Layout);
         jPanel5Layout.setHorizontalGroup(
@@ -361,15 +485,26 @@ private void actualizarTablaArchivos() {
             .addGroup(jPanel5Layout.createSequentialGroup()
                 .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel5Layout.createSequentialGroup()
-                        .addGap(33, 33, 33)
-                        .addComponent(FileDirName, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(26, 26, 26)
-                        .addComponent(Tamano, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel5Layout.createSequentialGroup()
                         .addGap(55, 55, 55)
                         .addComponent(isUser, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(IsAdmin, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(IsAdmin, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel5Layout.createSequentialGroup()
+                        .addGap(33, 33, 33)
+                        .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel5Layout.createSequentialGroup()
+                                .addComponent(isSCAN, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(isC_SCAN, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                .addGroup(jPanel5Layout.createSequentialGroup()
+                                    .addComponent(isFIFO, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(isSSTF, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(jPanel5Layout.createSequentialGroup()
+                                    .addComponent(FileDirName, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addGap(26, 26, 26)
+                                    .addComponent(Tamano, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))))
                 .addContainerGap(9, Short.MAX_VALUE))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -391,10 +526,15 @@ private void actualizarTablaArchivos() {
                         .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 79, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(85, 85, 85))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
-                        .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(delete)
-                            .addComponent(edit))
-                        .addGap(96, 96, 96))))
+                        .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 79, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                .addComponent(delete)
+                                .addComponent(edit)))
+                        .addGap(94, 94, 94))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
+                        .addComponent(ConfirmPolitics)
+                        .addGap(91, 91, 91))))
         );
         jPanel5Layout.setVerticalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -419,7 +559,19 @@ private void actualizarTablaArchivos() {
                 .addComponent(edit)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(delete)
-                .addContainerGap(189, Short.MAX_VALUE))
+                .addGap(18, 18, 18)
+                .addComponent(jLabel2)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(isFIFO)
+                    .addComponent(isSSTF))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(isC_SCAN)
+                    .addComponent(isSCAN))
+                .addGap(18, 18, 18)
+                .addComponent(ConfirmPolitics)
+                .addContainerGap(35, Short.MAX_VALUE))
         );
 
         jPanel4.add(jPanel5, java.awt.BorderLayout.LINE_END);
@@ -491,6 +643,8 @@ private void actualizarTablaArchivos() {
             actualizarVistaDisco((Archivo) nuevoElemento);
             //Actualizar Tabla
             actualizarTablaArchivos();
+            //acualizar cola
+            actualizarTablaCola();
         JOptionPane.showMessageDialog(this, "Archivo creado exitosamente");
         }
         
@@ -536,6 +690,7 @@ private void actualizarTablaArchivos() {
         jTree1.expandPath(new TreePath(selectedNode.getPath()));
         jTree1.scrollPathToVisible(new TreePath(nuevoNodo.getPath()));
 
+        actualizarTablaCola();
         JOptionPane.showMessageDialog(this, "Directorio creado exitosamente");
         FileDirName.setText("");
     } else {
@@ -575,10 +730,29 @@ private void actualizarTablaArchivos() {
             JOptionPane.showMessageDialog(this, "No se puede renombrar el elemento raíz.", "Error de Edición", JOptionPane.ERROR_MESSAGE);
              return;
         }
+        // Guardar referencia al archivo ANTES de editar (si es un archivo)
+    Archivo archivoAntes = null;
+    if (elemento instanceof Archivo) {
+        archivoAntes = (Archivo) elemento;
+    }
+        
         //renombrar en el sistema
         if (sistemaArchivos.EditarElemento(elemento,nuevoNombre,directorioPadre)) {
             selectedNode.setUserObject(elemento);
             treeModel.nodeChanged(selectedNode);
+            //Actualizar vista del disco si es un archivo
+        if (elemento instanceof Archivo) {
+            Archivo archivoEditado = (Archivo) elemento;
+            
+            //  Limpiar los bloques del nombre anterior
+            if (archivoAntes != null) {
+                liberarBloquesEnDisco(archivoAntes);
+            }
+            actualizarVistaDisco(archivoEditado);}
+        //actuaizar tabla cola
+            actualizarTablaCola();
+            //Actualizar Tabla
+            actualizarTablaArchivos();
             FileDirName.setText("");
             ;
             
@@ -644,18 +818,57 @@ private void actualizarTablaArchivos() {
         liberarBloquesEnDisco((Archivo) elemento);
         eliminado = sistemaArchivos.eliminarArchivo(elemento.getNombre(), directorioPadre);
     } else if (elemento instanceof Directorio) {
+        liberarBloquesDeDirectorio((Directorio) elemento);
         eliminado = sistemaArchivos.eliminarDirectorio(elemento.getNombre(), directorioPadre);
     }
         //remover visualmente
         if (eliminado) {
             treeModel.removeNodeFromParent(selectedNode);
             actualizarTablaArchivos();
+            actualizarTablaCola();
             JOptionPane.showMessageDialog(this, "Eliminado exitosamente");
         }else{
             JOptionPane.showMessageDialog(this, "Error al eliminar elemento");
         }
         
     }//GEN-LAST:event_deleteActionPerformed
+
+    private void ConfirmPoliticsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ConfirmPoliticsActionPerformed
+        // TODO add your handling code here:
+        buttonGroup1.add(isFIFO);
+        buttonGroup1.add(isSSTF);
+        buttonGroup1.add(isSCAN);
+        buttonGroup1.add(isC_SCAN);
+       
+        String politicaSeleccionada = "";
+
+    if (isFIFO.isSelected()) {
+        politicaSeleccionada = "FIFO";
+    } else if (isSSTF.isSelected()) {
+        politicaSeleccionada = "SSTF";
+    } else if (isSCAN.isSelected()) {
+        politicaSeleccionada = "SCAN";
+    } else if (isC_SCAN.isSelected()) {
+        politicaSeleccionada = "C-SCAN";
+    }
+    
+    if (politicaSeleccionada.isEmpty()) {
+        javax.swing.JOptionPane.showMessageDialog(this, 
+            "Seleccione una política de planificación.", 
+            "Aviso", javax.swing.JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+    //cambiar en el sistema
+    sistemaArchivos.getPlanificador().setPolitica(politicaSeleccionada);
+
+    javax.swing.JOptionPane.showMessageDialog(this, 
+        "Política de planificación cambiada a: " + politicaSeleccionada,
+        "Confirmación", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+
+    System.out.println(" Política de disco cambiada a: " + politicaSeleccionada);
+    
+    
+    }//GEN-LAST:event_ConfirmPoliticsActionPerformed
 
     /**
      * @param args the command line arguments
@@ -683,16 +896,23 @@ private void actualizarTablaArchivos() {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton ConfirmPolitics;
     private javax.swing.JButton CreateDir;
     private javax.swing.JButton CreateFile;
     private javax.swing.JTextField FileDirName;
     private javax.swing.JRadioButton IsAdmin;
     private javax.swing.JSpinner Tamano;
     private javax.swing.ButtonGroup botones;
+    private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JButton delete;
     private javax.swing.JButton edit;
+    private javax.swing.JRadioButton isC_SCAN;
+    private javax.swing.JRadioButton isFIFO;
+    private javax.swing.JRadioButton isSCAN;
+    private javax.swing.JRadioButton isSSTF;
     private javax.swing.JRadioButton isUser;
     private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
@@ -701,7 +921,9 @@ private void actualizarTablaArchivos() {
     private javax.swing.JPanel jPanel6;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JTable jTable1;
+    private javax.swing.JTable jTable2;
     private javax.swing.JTree jTree1;
     private javax.swing.JButton mode;
     // End of variables declaration//GEN-END:variables

@@ -11,11 +11,14 @@ import edd.Cola;
  */
 public class PlanificadorDisco {
      private String politica;
+     private int posicionCabezal;
+    private boolean direccionScan; //true-arriba false - abajo
     
 
     public PlanificadorDisco(String politica) {
         this.politica = politica.toUpperCase();
-       
+       this.posicionCabezal = 0;
+        this.direccionScan = true;
     }
     
     public Proceso atenderSolicitud(Cola solicitudes, Disco disco){
@@ -39,9 +42,10 @@ public class PlanificadorDisco {
    private Proceso atenderFIFO(Cola solicitudes,Disco disco) {
         Proceso proceso = solicitudes.desencolar();
         if (proceso != null) {
-            // Actualizar cabezal al primer bloque del archivo
             int bloqueObjetivo = obtenerPrimerBloque(disco, proceso.getArchivoObjetivo());
-            disco.setPosicionCabezal(bloqueObjetivo);
+            if (bloqueObjetivo != -1) {
+                posicionCabezal = bloqueObjetivo;
+            }
         }
         return proceso;
     }
@@ -65,70 +69,106 @@ public class PlanificadorDisco {
             }
         }
         
-        if (seleccionado == null && !solicitudes.isEmpty()) {
-            seleccionado = solicitudes.get(0);
-            System.out.println("  [WARNING] Archivo no encontrado: " + seleccionado.getArchivoObjetivo() + ", eliminando de cola");
-        }
-        
         if (seleccionado != null) {
             solicitudes.remove(seleccionado);
             int nuevoBloque = obtenerPrimerBloque(disco, seleccionado.getArchivoObjetivo());
             if (nuevoBloque != -1) {
-                disco.setPosicionCabezal(nuevoBloque); 
+                posicionCabezal = nuevoBloque;
             }
         }
+        
+        // Agregar el println aquí antes del return TEMPORAL
+    if (seleccionado != null) {
+        int bloqueObjetivo = obtenerPrimerBloque(disco, seleccionado.getArchivoObjetivo());
+        System.out.println("Evaluando " + seleccionado.getName() + " bloque objetivo: " + bloqueObjetivo);
+    }
         return seleccionado;
     }
    // Scan y si es true circular C-SCAN
-     private Proceso atenderSCAN(Cola solicitudes, Disco disco,boolean circular) {
-        int posicionActual = disco.getPosicionCabezal();
-        //int totalBloques = disco.getTotalBloques(); NO SE ESTÁ USANDO??
+       private Proceso atenderSCAN(Cola solicitudes, Disco disco, boolean circular) {
         Proceso seleccionado = null;
-        int menorDiferencia = Integer.MAX_VALUE;
-
-        // Buscar proceso hacia adelante (bloque >= cabezal)
-        for (int i = 0; i < solicitudes.size(); i++) {
-            Proceso p = solicitudes.get(i);
-            int bloqueObjetivo = obtenerPrimerBloque(disco, p.getArchivoObjetivo());
-            if (bloqueObjetivo == -1) continue;
-            
-            if (bloqueObjetivo >= posicionActual) {
-                int diferencia = bloqueObjetivo - posicionActual;
-                if (diferencia < menorDiferencia) {
-                    menorDiferencia = diferencia;
-                    seleccionado = p;
-                }
-            }
-        }
-
-        // Si no hay más hacia adelante
-        if (seleccionado == null) {
+        int mejorDistancia = Integer.MAX_VALUE;
+        int totalBloques = disco.getTotalBloques();
+        
+        // SCAN normal
+        if (direccionScan) {
+            // Buscar hacia arriba
             for (int i = 0; i < solicitudes.size(); i++) {
                 Proceso p = solicitudes.get(i);
-                int bloqueObjetivo = obtenerPrimerBloque(disco, p.getArchivoObjetivo());
-                if (bloqueObjetivo == -1) continue;
-                
-                int diferencia = posicionActual - bloqueObjetivo;
-                if (diferencia < menorDiferencia) {
-                    menorDiferencia = diferencia;
-                    seleccionado = p;
+                int bloque = obtenerPrimerBloque(disco, p.getArchivoObjetivo());
+                if (bloque != -1 && bloque >= posicionCabezal) {
+                    int distancia = bloque - posicionCabezal;
+                    if (distancia < mejorDistancia) {
+                        mejorDistancia = distancia;
+                        seleccionado = p;
+                    }
+                }
+            }
+            
+            // Si no encontró hacia arriba, cambiar dirección
+            if (seleccionado == null) {
+                direccionScan = false;
+                // Buscar el más cercano hacia abajo
+                for (int i = 0; i < solicitudes.size(); i++) {
+                    Proceso p = solicitudes.get(i);
+                    int bloque = obtenerPrimerBloque(disco, p.getArchivoObjetivo());
+                    if (bloque != -1) {
+                        int distancia = posicionCabezal - bloque;
+                        if (distancia < mejorDistancia) {
+                            mejorDistancia = distancia;
+                            seleccionado = p;
+                        }
+                    }
+                }
+            }
+        } else {
+            // Buscar hacia abajo
+            for (int i = 0; i < solicitudes.size(); i++) {
+                Proceso p = solicitudes.get(i);
+                int bloque = obtenerPrimerBloque(disco, p.getArchivoObjetivo());
+                if (bloque != -1 && bloque <= posicionCabezal) {
+                    int distancia = posicionCabezal - bloque;
+                    if (distancia < mejorDistancia) {
+                        mejorDistancia = distancia;
+                        seleccionado = p;
+                    }
+                }
+            }
+            
+            // Si no encontró hacia abajo, cambiar dirección
+            if (seleccionado == null) {
+                direccionScan = true;
+                // C-SCAN: volver al inicio si es circular
+                if (circular) {
+                    posicionCabezal = 0;
+                }
+                // Buscar el más cercano hacia arriba
+                for (int i = 0; i < solicitudes.size(); i++) {
+                    Proceso p = solicitudes.get(i);
+                    int bloque = obtenerPrimerBloque(disco, p.getArchivoObjetivo());
+                    if (bloque != -1) {
+                        int distancia = bloque - posicionCabezal;
+                        if (distancia < mejorDistancia) {
+                            mejorDistancia = distancia;
+                            seleccionado = p;
+                        }
+                    }
                 }
             }
         }
         
-        if (seleccionado == null && !solicitudes.isEmpty()) {
-            seleccionado = solicitudes.get(0);
-            System.out.print("  [WARNING] Archivo no encontrado en SCAN: " + seleccionado.getArchivoObjetivo());
-        }
-
         if (seleccionado != null) {
             solicitudes.remove(seleccionado);
             int nuevoBloque = obtenerPrimerBloque(disco, seleccionado.getArchivoObjetivo());
             if (nuevoBloque != -1) {
-                disco.setPosicionCabezal(nuevoBloque);
+                posicionCabezal = nuevoBloque;
             }
         }
-
+        //TEMPORAAAAL
+         if (seleccionado != null) {
+        int bloqueObjetivo = obtenerPrimerBloque(disco, seleccionado.getArchivoObjetivo());
+        System.out.println("Evaluando " + seleccionado.getName() + " bloque objetivo: " + bloqueObjetivo);
+    }
         return seleccionado;
     }
     
@@ -142,11 +182,19 @@ private int obtenerPrimerBloque(Disco disco, String archivoNombre) {
                 return b.getBlockNumber();
             }
         }
-        return -1; // Si no lo encuentra, asumir bloque 0
+        return -1; 
     }
 
     public String getPolitica() {
         return politica;
+    }
+
+    public int getPosicionCabezal() {
+        return posicionCabezal;
+    }
+
+    public void setPosicionCabezal(int posicionCabezal) {
+        this.posicionCabezal = posicionCabezal;
     }
 
     

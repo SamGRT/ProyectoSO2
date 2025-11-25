@@ -7,7 +7,7 @@ import java.util.Date;
 
 /**
  *
- * @author sarazo
+ * @author sarazot
  */
 public class PersistenciaManager {
     private static final String ARCHIVO_ESTADO = "sistema_archivos_estado.txt";
@@ -36,7 +36,7 @@ public class PersistenciaManager {
         }
     }
     
-    public static SistemaArchivos cargarEstado(Directorio directorio) {
+    public static SistemaArchivos cargarEstado() {
         File archivo = new File(ARCHIVO_ESTADO);
         if (!archivo.exists()) {
             System.out.println("ℹ️ No hay estado previo. Sistema nuevo.");
@@ -63,7 +63,7 @@ public class PersistenciaManager {
                 } else if ("DIRECTORIO".equals(tipo)) {
                     cargarDirectorio(partes, sistema);
                 } else if ("ARCHIVO".equals(tipo)) {
-                    cargarArchivo(partes, sistema,directorio);
+                    cargarArchivo(partes, sistema);
                 }
             }
             
@@ -147,7 +147,7 @@ public class PersistenciaManager {
         }
     }
     
-    private static void cargarArchivo(String[] partes, SistemaArchivos sistema,Directorio directorio) {
+    private static void cargarArchivo(String[] partes, SistemaArchivos sistema) {
         if (partes.length < 8) return;
         
         String ruta = partes[1];
@@ -156,7 +156,7 @@ public class PersistenciaManager {
         
         if (padre != null) {
             int tamañoBloques = Integer.parseInt(partes[3]);
-            Archivo archivo = new Archivo(nombre, partes[2], tamañoBloques,directorio);
+            Archivo archivo = new Archivo(nombre, partes[2], tamañoBloques,padre);
             archivo.setPermisos(partes[4]);
             
             // Cargar bloques

@@ -35,10 +35,12 @@ public class SistemaArchivos {
     // Métodos CRUD para archivos y directorios
     public boolean crearArchivo(String nombre, int tamañoBloques, Directorio directorio) {
         if (!modoAdministrador && !directorio.getPropietario().equals(usuarioActual)) {
+            JOptionPane.showMessageDialog(null, "En modo Usuario no puede crear Archivos");
             return false; // Sin permisos
         }
         
         if (!disco.HayEspacio(tamañoBloques)) {
+            JOptionPane.showMessageDialog(null, "No hay suficiente Espacio");
             return false; // No hay espacio
         }
         
@@ -160,18 +162,43 @@ public class SistemaArchivos {
     public void agregarSolicitudES(Proceso proceso) {
         solicitudesES.encolar(proceso);
         proceso.setEstado("BLOQUEADO");
+        System.out.println("Solicitud agregada: " + proceso.getName() + " - Estado: " + proceso.getEstado());
+    
+
+    
+}
+    
+    
+public Proceso atenderSolicitudES() {
+    if (solicitudesES.isEmpty()) {
+        return null;
     }
     
-  public Proceso atenderSolicitudES() {
-        Proceso proceso = planificador.atenderSolicitud(solicitudesES, disco);
-        if (proceso != null) {
-            proceso.setEstado("EJECUTANDO");
+    Proceso proceso = planificador.atenderSolicitud(solicitudesES, disco);
+    if (proceso != null) {
+        System.out.println("Iniciando proceso: " + proceso.getName());
+        proceso.setEstado("EJECUTANDO");
+        
+        // Simular procesamiento (sin Thread.sleep para no bloquear la UI)
+        // Podemos simular con incrementos de tiempo
+        for (int i = 0; i < 2; i++) {
             proceso.incrementarTiempo();
-            proceso.setEstado("TERMINADO");
         }
-     
-        return proceso;
+        
+        proceso.setEstado("TERMINADO");
+        System.out.println("Proceso terminado: " + proceso.getName());
+        
+        // Actualizar posición del cabezal en el disco
+        disco.setPosicionCabezal(planificador.getPosicionCabezal());
     }
+    System.out.println(
+    "Política actual: " + planificador.getPolitica() + 
+    " | Cabezal en: " + planificador.getPosicionCabezal()
+);
+
+    return proceso;
+}
+
   
    public Archivo buscarArchivo(String ruta) {
         String[] partes = ruta.split("/");

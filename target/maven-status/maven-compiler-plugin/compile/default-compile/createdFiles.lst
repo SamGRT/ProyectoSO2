@@ -3,6 +3,7 @@ edd\ListaEnlazada.class
 edd\Pila.class
 edd\Block.class
 gui\BlockCard.class
+gui\MainWindow$10.class
 gui\MainWindow$3.class
 edd\BufferEntry.class
 gui\MainWindow$8.class
