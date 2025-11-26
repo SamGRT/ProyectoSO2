@@ -25,7 +25,7 @@ import model.SistemaArchivos;
  * @author Samantha
  */
 public class MainWindow extends javax.swing.JFrame {
-    private SistemaArchivos sistemaArchivos;
+    public SistemaArchivos sistemaArchivos;
     private DefaultTreeModel treeModel;
     private DefaultMutableTreeNode rootNode;
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(MainWindow.class.getName());
@@ -43,10 +43,19 @@ public class MainWindow extends javax.swing.JFrame {
      */
     public MainWindow() {
         initComponents();
-        sistemaArchivos = new SistemaArchivos();
+         sistemaArchivos = model.PersistenciaManager.cargarEstado(); ////////////////////
+        
         InicializarArbol();
         inicializarVistaDisco();
-        
+        if (sistemaArchivos.getRaiz().getElementos().tamaño() > 0 || 
+        model.PersistenciaManager.existeEstadoGuardado()) {
+        reconstruirArbolCompleto();
+        actualizarVistaDiscoCompleta();
+    }
+        //cargar txt visualmente
+       
+        actualizarTablaArchivos();
+        actualizarTablaCola();
 
 // === TIMER para atender solicitudes de E/S progresivamente ===
 processTimer = new javax.swing.Timer(5000, e -> {
@@ -77,8 +86,7 @@ processTimer.start();
         Tcola.setColumnIdentifiers(titlesCola);
         jTable2.setModel(Tcola);
         
-        actualizarTablaArchivos();
-        actualizarTablaCola();
+        
     }
     
     private void InicializarArbol(){
@@ -91,6 +99,25 @@ processTimer.start();
           jTree1.expandPath(new TreePath(rootNode.getPath()));
 
     }
+    
+    private void actualizarVistaDiscoCompleta() {
+    // Limpiar todos los bloques primero
+    for (int i = 0; i < TOTAL_BLOCKS; i++) {
+        BlockCard blockCard = (BlockCard) blocks.obtener(i);
+        blockCard.setOccupied(false, "", Color.LIGHT_GRAY);
+    }
+    
+    // Actualizar con todos los archivos cargados
+    ListaEnlazada todosLosArchivos = sistemaArchivos.obtenerTodosLosArchivos();
+    for (int i = 0; i < todosLosArchivos.tamaño(); i++) {
+        Archivo archivo = (Archivo) todosLosArchivos.obtener(i);
+        actualizarVistaDisco(archivo);
+    }
+    
+    // Refrescar la vista
+    diskPanel.revalidate();
+    diskPanel.repaint();
+}
     
     private DefaultMutableTreeNode getSelectedNode() {
     TreePath selectedPath = jTree1.getSelectionPath();
@@ -176,6 +203,34 @@ private void liberarBloquesEnDisco(Archivo archivo) {
     diskPanel.repaint();
 }
 
+private void reconstruirArbolCompleto() {
+    // Limpiar el árbol actual
+    rootNode.removeAllChildren();
+    
+    // Reconstruir recursivamente
+    reconstruirArbolRecursivo(sistemaArchivos.getRaiz(), rootNode);
+    
+    // Actualizar el modelo
+    treeModel.reload();
+    jTree1.expandPath(new TreePath(rootNode.getPath()));
+}
+
+private void reconstruirArbolRecursivo(Directorio directorio, DefaultMutableTreeNode parentNode) {
+    ListaEnlazada elementos = directorio.getElementos();
+    for (int i = 0; i < elementos.tamaño(); i++) {
+        FileSystemElement elemento = (FileSystemElement) elementos.obtener(i);
+        DefaultMutableTreeNode nuevoNodo = new DefaultMutableTreeNode(elemento);
+        parentNode.add(nuevoNodo);
+        
+        if (elemento.esDirectorio()) {
+            reconstruirArbolRecursivo((Directorio) elemento, nuevoNodo);
+        }
+    }
+}
+
+ public model.SistemaArchivos getSistemaArchivos() {
+        return sistemaArchivos;
+    }
 private void actualizarTablaArchivos() {
     // Limpiar la tabla
     Tm.setRowCount(0);
@@ -706,10 +761,11 @@ private void actualizarTablaCola(){
 
     private void editActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editActionPerformed
         // TODO add your handling code here:
-        if (sistemaArchivos.getUsuarioActual()=="User") {
+          if (sistemaArchivos.getUsuarioActual()=="User") {
             JOptionPane.showMessageDialog(this, "No puede Editar en modo Usuario");
             return;
         }
+        
         
         DefaultMutableTreeNode selectedNode = getSelectedNode();
         String nuevoNombre = FileDirName.getText().trim();
@@ -835,6 +891,11 @@ private void actualizarTablaCola(){
 
     private void ConfirmPoliticsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ConfirmPoliticsActionPerformed
         // TODO add your handling code here:
+        
+         if (sistemaArchivos.getUsuarioActual()=="User") {
+            JOptionPane.showMessageDialog(this, "No puede Editar en modo Usuario");
+            return;
+        }
         buttonGroup1.add(isFIFO);
         buttonGroup1.add(isSSTF);
         buttonGroup1.add(isSCAN);

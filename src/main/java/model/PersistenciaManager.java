@@ -4,6 +4,8 @@ import edd.ListaEnlazada;
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
 
 /**
  *
@@ -182,6 +184,25 @@ public class PersistenciaManager {
         String[] partesRuta = ruta.split("/");
         return partesRuta[partesRuta.length - 1];
     }
+    
+    public static void reconstruirArbolVisual(DefaultMutableTreeNode rootNode, DefaultTreeModel treeModel, SistemaArchivos sistema) {
+    rootNode.removeAllChildren();
+    reconstruirArbolRecursivo(sistema.getRaiz(), rootNode);
+    treeModel.reload();
+}
+
+private static void reconstruirArbolRecursivo(Directorio directorio, DefaultMutableTreeNode parentNode) {
+    ListaEnlazada elementos = directorio.getElementos();
+    for (int i = 0; i < elementos.tamaño(); i++) {
+        FileSystemElement elemento = (FileSystemElement) elementos.obtener(i);
+        DefaultMutableTreeNode nuevoNodo = new DefaultMutableTreeNode(elemento);
+        parentNode.add(nuevoNodo);
+        
+        if (elemento.esDirectorio()) {
+            reconstruirArbolRecursivo((Directorio) elemento, nuevoNodo);
+        }
+    }
+}
     
     private static Directorio obtenerDirectorioPadre(String ruta, SistemaArchivos sistema) {
         String[] partesRuta = ruta.split("/");

@@ -14,6 +14,7 @@ gui\CustomTreeRendered.class
 model\Directorio.class
 model\SistemaArchivos.class
 gui\MainWindow.class
+model\ProyectoSO2$1.class
 model\User.class
 gui\MainWindow$2.class
 model\Disco.class
